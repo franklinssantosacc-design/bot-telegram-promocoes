@@ -390,7 +390,12 @@ async def processar_mensagem(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await update.message.reply_text("❌ Ocorreu um erro ao processar a mensagem.")
 
 def main():
-    TOKEN = os.getenv('BOT_TOKEN', '8490182735:AAGr7PgtdqBSvQbug1jCGa1-FvsAxt9RKwM')
+    # MUDANÇA AQUI: Só usa variável de ambiente, sem valor padrão
+    TOKEN = os.getenv('BOT_TOKEN')
+    
+    if not TOKEN:
+        logging.error("❌ Token do bot não encontrado! Configure a variável BOT_TOKEN.")
+        return
     
     application = Application.builder().token(TOKEN).build()
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, processar_mensagem))
