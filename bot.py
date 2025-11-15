@@ -1,7 +1,6 @@
 import re
 import logging
 import os
-import asyncio
 import threading
 from flask import Flask
 from telegram import Update
@@ -372,8 +371,8 @@ async def processar_mensagem(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logging.error(f"Erro: {e}")
         await update.message.reply_text("❌ Ocorreu um erro ao processar a mensagem.")
 
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    logging.error(f"Erro durante a atualização {update}: {context.error}")
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+    logging.error(f"Erro durante a atualização: {context.error}")
     
     if isinstance(context.error, Conflict):
         logging.error("🚨 CONFLITO: Outra instância do bot está rodando.")
@@ -394,10 +393,10 @@ def run_bot():
         application.add_error_handler(error_handler)
         
         print("🤖 Bot Preguiça SUPER OTIMIZADO Iniciado!")
-        print("🌐 Servidor web ativo na porta 10000")
+        print("🌐 Servidor web ativo")
         print("✅ Pronto para receber mensagens!")
         
-        # ✅ CORREÇÃO APLICADA: Polling simplificado
+        # Polling simplificado e compatível
         application.run_polling(
             drop_pending_updates=True,
             allowed_updates=Update.ALL_TYPES
