@@ -260,15 +260,21 @@ class ParserPromocoes:
         return ''
     
     def _processar_descricao(self, texto):
-        """Processa a descrição mantendo emojis relevantes"""
+        """Processa a descrição - SEMPRE começa com 🔥, remove outros emojis iniciais"""
         texto_limpo = texto
         
-        # Remove múltiplos 🔥 mas mantém um
-        texto_limpo = re.sub(r'^🔥+', '🔥', texto_limpo)
+        # REMOVE TODOS os emojis iniciais (🔥, ✨, 🧟‍♂️, ✨➡️, etc.)
+        # e depois adiciona APENAS UM 🔥
+        emojis_para_remover_inicio = ['🔥', '✨', '🧟‍♂️', '✨➡️', '📦', '🎮', '🖥️', '💻', '⌨️', '🖱️']
         
-        # CORREÇÃO: Mantém emojis de produto, remove apenas emojis de preço/cupom
-        emojis_remover = ['⚡️', '✔️', '⚠️', '✅', '⭐️', '🇧🇷', '✍️', '💸', '📝', '💵', '💰']
-        for emoji in emojis_remover:
+        # Remove múltiplos emojis do início
+        for emoji in emojis_para_remover_inicio:
+            if texto_limpo.startswith(emoji):
+                texto_limpo = texto_limpo[len(emoji):].strip()
+        
+        # Remove emojis problemáticos do meio também
+        emojis_remover_meio = ['⚡️', '✔️', '⚠️', '✅', '⭐️', '🇧🇷', '✍️', '💸', '📝', '💵', '💰']
+        for emoji in emojis_remover_meio:
             texto_limpo = texto_limpo.replace(emoji, '')
         
         # Remove padrões indesejados
@@ -287,8 +293,8 @@ class ParserPromocoes:
         
         texto_limpo = texto_limpo.strip()
         
-        # CORREÇÃO: Se não começa com 🔥, adiciona
-        if not any(texto_limpo.startswith(emoji) for emoji in ['🔥', '✨', '🧟‍♂️', '✨➡️']):
+        # SEMPRE adiciona 🔥 no início
+        if not texto_limpo.startswith('🔥'):
             texto_limpo = '🔥' + texto_limpo
             
         return texto_limpo
