@@ -1,13 +1,11 @@
 import re
 import logging
 import os
-import threading
 from flask import Flask
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from telegram.error import Conflict
 
-# ===== CONFIGURAÇÃO DO SERVIDOR WEB PARA RENDER =====
+# ===== CONFIGURAÇÃO DO SERVIDOR WEB =====
 app = Flask(__name__)
 
 @app.route('/')
@@ -17,11 +15,6 @@ def health_check():
 @app.route('/health')
 def health():
     return {"status": "online", "bot": "ativo"}, 200
-
-def run_flask_app():
-    """Roda o servidor Flask em thread separada"""
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port, debug=False)
 
 # ===== CONFIGURAÇÃO DO BOT =====
 logging.basicConfig(
@@ -371,14 +364,8 @@ async def processar_mensagem(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logging.error(f"Erro: {e}")
         await update.message.reply_text("❌ Ocorreu um erro ao processar a mensagem.")
 
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
-    logging.error(f"Erro durante a atualização: {context.error}")
-    
-    if isinstance(context.error, Conflict):
-        logging.error("🚨 CONFLITO: Outra instância do bot está rodando.")
-
-def run_bot():
-    """Executa o bot em uma thread separada"""
+def start_bot():
+    """Inicia o bot de forma simples e direta"""
     TOKEN = os.getenv('BOT_TOKEN')
     
     if not TOKEN:
@@ -386,38 +373,37 @@ def run_bot():
         return
     
     try:
+        # Cria a aplicação
         application = Application.builder().token(TOKEN).build()
         
+        # Adiciona os handlers
         application.add_handler(CommandHandler("start", start))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, processar_mensagem))
-        application.add_error_handler(error_handler)
         
         print("🤖 Bot Preguiça SUPER OTIMIZADO Iniciado!")
-        print("🌐 Servidor web ativo")
         print("✅ Pronto para receber mensagens!")
+        print("🌐 Servidor web rodando na porta 10000")
         
-        # Polling simplificado e compatível
-        application.run_polling(
-            drop_pending_updates=True,
-            allowed_updates=Update.ALL_TYPES
-        )
+        # Inicia o polling de forma SIMPLES
+        application.run_polling()
         
-    except Conflict:
-        logging.error("🚨 CONFLITO CRÍTICO: Já existe uma instância deste bot rodando.")
     except Exception as e:
-        logging.error(f"❌ Erro crítico ao iniciar bot: {e}")
+        logging.error(f"❌ Erro ao iniciar bot: {e}")
 
 def main():
-    print("🚀 Iniciando Bot + Servidor Web...")
+    print("🚀 Iniciando Bot Preguiça...")
     
-    # Inicia o servidor Flask em thread separada
-    flask_thread = threading.Thread(target=run_flask_app, daemon=True)
+    # Inicia o servidor Flask em uma thread
+    import threading
+    def start_flask():
+        port = int(os.environ.get('PORT', 10000))
+        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+    
+    flask_thread = threading.Thread(target=start_flask, daemon=True)
     flask_thread.start()
     
-    print("✅ Servidor Flask iniciado")
-    
     # Inicia o bot
-    run_bot()
+    start_bot()
 
 if __name__ == '__main__':
     main()
