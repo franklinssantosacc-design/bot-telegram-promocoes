@@ -214,7 +214,7 @@ class ParserPromocoes:
             if ali_complexo:
                 return ali_complexo.group(1).strip()
             
-            ali_multi = re.search(r'([A-Z0-9]+\s*(?:ou|/)\s*[A-Z0-9]+\s*(?:\+[^+]*)*\+?\s*\d+\s*Moedas?\s*(?:no\s*APP)?)', linha, re.IGNORECASE)
+            ali_multi = re.search(r'([A-Z0U9]+\s*(?:ou|/)\s*[A-Z0-9]+\s*(?:\+[^+]*)*\+?\s*\d+\s*Moedas?\s*(?:no\s*APP)?)', linha, re.IGNORECASE)
             if ali_multi:
                 return ali_multi.group(1).strip()
         
@@ -397,10 +397,10 @@ def run_bot():
         print("🌐 Servidor web ativo na porta 10000")
         print("✅ Pronto para receber mensagens!")
         
+        # ✅ CORREÇÃO APLICADA: Polling simplificado
         application.run_polling(
             drop_pending_updates=True,
-            allowed_updates=Update.ALL_TYPES,
-            close_loop=False
+            allowed_updates=Update.ALL_TYPES
         )
         
     except Conflict:
