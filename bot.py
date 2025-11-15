@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def health_check():
-    return "🤖 Bot está rodando!", 200
+    return "🤖 Bot Preguiça está rodando!", 200
 
 @app.route('/health')
 def health():
@@ -364,8 +364,13 @@ async def processar_mensagem(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logging.error(f"Erro: {e}")
         await update.message.reply_text("❌ Ocorreu um erro ao processar a mensagem.")
 
+def start_flask():
+    """Inicia o servidor Flask"""
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+
 def start_bot():
-    """Inicia o bot de forma simples e direta"""
+    """Inicia o bot Telegram"""
     TOKEN = os.getenv('BOT_TOKEN')
     
     if not TOKEN:
@@ -373,37 +378,28 @@ def start_bot():
         return
     
     try:
-        # Cria a aplicação
         application = Application.builder().token(TOKEN).build()
         
-        # Adiciona os handlers
         application.add_handler(CommandHandler("start", start))
         application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, processar_mensagem))
         
-        print("🤖 Bot Preguiça SUPER OTIMIZADO Iniciado!")
-        print("✅ Pronto para receber mensagens!")
-        print("🌐 Servidor web rodando na porta 10000")
+        print("=" * 50)
+        print("🤖 BOT PREGUIÇA INICIADO COM SUCESSO!")
+        print("🌐 Servidor web: http://0.0.0.0:10000")
+        print("✅ Pronto para receber mensagens no Telegram!")
+        print("=" * 50)
         
-        # Inicia o polling de forma SIMPLES
+        # Polling super simples
         application.run_polling()
         
     except Exception as e:
         logging.error(f"❌ Erro ao iniciar bot: {e}")
 
-def main():
-    print("🚀 Iniciando Bot Preguiça...")
-    
-    # Inicia o servidor Flask em uma thread
+if __name__ == '__main__':
+    # Inicia Flask em thread separada
     import threading
-    def start_flask():
-        port = int(os.environ.get('PORT', 10000))
-        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
-    
     flask_thread = threading.Thread(target=start_flask, daemon=True)
     flask_thread.start()
     
-    # Inicia o bot
+    # Inicia o bot na thread principal
     start_bot()
-
-if __name__ == '__main__':
-    main()
