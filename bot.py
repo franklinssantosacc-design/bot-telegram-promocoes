@@ -74,19 +74,31 @@ class ParserPromocoes:
         return dados
     
     def _encontrar_descricao_correta(self, linhas, texto):
-        for linha in linhas:
-            if linha.startswith('🔥') and len(linha) > 5:
-                return self._processar_descricao(linha)
+        """CORREÇÃO: Encontra descrição mesmo sem 🔥, aceita ✨, 🧟‍♂️, ✨➡️, etc."""
+        
+        # CASO 1: Já começa com 🔥 ou outros emojis de produto
+        emojis_descricao = ['🔥', '✨', '🧟‍♂️', '✨➡️', '📦', '🎮', '🖥️', '💻', '⌨️', '🖱️']
         
         for linha in linhas:
+            # Verifica se começa com qualquer emoji de descrição
+            for emoji in emojis_descricao:
+                if linha.startswith(emoji) and len(linha) > 5:
+                    return self._processar_descricao(linha)
+        
+        # CASO 2: Linhas que claramente são descrições de produto (MELHORIA)
+        for linha in linhas:
+            # IGNORA linhas que NUNCA são descrição
             if self._eh_linha_nao_descricao(linha):
                 continue
             
+            # CORREÇÃO: Aceita linhas que começam com vários emojis
             linha_limpa = self._limpar_descricao_basica(linha)
             
+            # Verifica se parece uma descrição de produto após limpar
             if len(linha_limpa) > 10 and self._parece_descricao_produto(linha_limpa):
                 return '🔥' + linha_limpa
         
+        # CASO 3: Primeira linha que não é lixo (FALLBACK MELHORADO)
         for linha in linhas:
             if (not self._eh_linha_nao_descricao(linha) and 
                 len(linha) > 8 and 
@@ -95,6 +107,7 @@ class ParserPromocoes:
                 if len(linha_limpa) > 5:
                     return '🔥' + linha_limpa
         
+        # CASO 4: Busca por qualquer linha com nome de produto (ÚLTIMO RECURSO)
         for linha in linhas:
             if self._parece_descricao_produto(linha) and len(linha) > 15:
                 linha_limpa = self._limpar_descricao_basica(linha)
@@ -103,14 +116,15 @@ class ParserPromocoes:
         return '🔥[descrição do produto]'
     
     def _eh_linha_nao_descricao(self, linha):
+        """Verifica se a linha definitivamente NÃO é descrição"""
         padroes_nao_descricao = [
-            r'^http', r'^🔗', r'^📍', r'^⭐️', r'^✍️', r'^🎟', r'^💵', r'^💸', 
-            r'^📝', r'^✨', r'^POR:', r'^Valor:', r'^Cupom', r'^CUPOM', 
+            r'^http', r'^🔗', r'^📍', r'^💸', r'^📝', r'^🎟', r'^💵', 
+            r'^✍️', r'^POR:', r'^Valor:', r'^Cupom', r'^CUPOM', 
             r'^Oferta:', r'^Use o', r'^Ative por', r'^Vendido e entregue',
             r'^Parcelado', r'^Garantia', r'^Limitado', r'^OFF', r'^Origem do',
             r'^Por apenas:', r'^COMPREI', r'^Link de compra:', r'^🔗 Link',
             r'^Aqui estão', r'^Visite a página', r'^www\.', r'^\d+×',
-            r'^❌', r'^✅', r'^⚠️',
+            r'^❌', r'^✅', r'^⚠️', r'^FRETE GRÁTIS', r'^Em até \d+x',
         ]
         
         linha_lower = linha.lower()
@@ -118,12 +132,14 @@ class ParserPromocoes:
             if re.match(padrao, linha, re.IGNORECASE):
                 return True
         
+        # Não considera linhas muito curtas como descrição
         if len(linha.strip()) < 10:
             return True
             
         return False
     
     def _parece_descricao_produto(self, linha):
+        """Verifica se a linha parece uma descrição de produto"""
         termos_produto = [
             'teclado', 'mouse', 'monitor', 'processador', 'placa', 'notebook', 
             'game', 'power bank', 'combo', 'desodorante', 'ssd', 'headset', 
@@ -244,11 +260,18 @@ class ParserPromocoes:
         return ''
     
     def _processar_descricao(self, texto):
+        """Processa a descrição mantendo emojis relevantes"""
         texto_limpo = texto
         
+        # Remove múltiplos 🔥 mas mantém um
         texto_limpo = re.sub(r'^🔥+', '🔥', texto_limpo)
-        texto_limpo = re.sub(r'[🧟‍♂️⚡️✨️✔️⚠️✅⭐️🇧🇷✍️💸📝✨➡️]', '', texto_limpo)
         
+        # CORREÇÃO: Mantém emojis de produto, remove apenas emojis de preço/cupom
+        emojis_remover = ['⚡️', '✔️', '⚠️', '✅', '⭐️', '🇧🇷', '✍️', '💸', '📝', '💵', '💰']
+        for emoji in emojis_remover:
+            texto_limpo = texto_limpo.replace(emoji, '')
+        
+        # Remove padrões indesejados
         padroes_remover = [
             r'[💵💰]?\s*R\$\s*[\d\.,]+',
             r'-?\s*R\$\s*[\d\.,]+',
@@ -264,13 +287,20 @@ class ParserPromocoes:
         
         texto_limpo = texto_limpo.strip()
         
-        if not texto_limpo.startswith('🔥'):
+        # CORREÇÃO: Se não começa com 🔥, adiciona
+        if not any(texto_limpo.startswith(emoji) for emoji in ['🔥', '✨', '🧟‍♂️', '✨➡️']):
             texto_limpo = '🔥' + texto_limpo
             
         return texto_limpo
     
     def _limpar_descricao_basica(self, texto):
-        texto_limpo = re.sub(r'[🧟‍♂️⚡️✨️✔️⚠️✅⭐️🇧🇷✍️💸📝✨➡️]', '', texto)
+        """Limpeza básica para descrições sem 🔥 - mantém emojis de produto"""
+        # CORREÇÃO: Remove apenas emojis problemáticos, mantém emojis de produto
+        emojis_remover = ['⚡️', '✔️', '⚠️', '✅', '⭐️', '🇧🇷', '✍️', '💸', '📝', '💵', '💰']
+        texto_limpo = texto
+        for emoji in emojis_remover:
+            texto_limpo = texto_limpo.replace(emoji, '')
+        
         texto_limpo = re.sub(r'\s*-\s*R\$\s*[\d\.,]+$', '', texto_limpo)
         texto_limpo = re.sub(r'\s*\(Cartão\)$', '', texto_limpo)
         texto_limpo = re.sub(r'\* \d+×', '', texto_limpo)
